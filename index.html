@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My To-Do List</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --text: #1f2430;
+    --muted: #8a90a0;
+    --accent: #4f7cff;
+    --accent-soft: #e8eeff;
+    --border: #e3e6ec;
+    --danger: #ff5b5b;
+    --done: #9aa1b3;
+    --shadow: 0 8px 30px rgba(30, 40, 70, 0.08);
+  }
+  [data-theme="dark"] {
+    --bg: #12151c;
+    --card: #1c212c;
+    --text: #eef0f5;
+    --muted: #7d8496;
+    --accent: #6b8fff;
+    --accent-soft: #253253;
+    --border: #2b313f;
+    --danger: #ff6b6b;
+    --done: #5b6172;
+    --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+    transition: background 0.3s, color 0.3s;
+  }
+  .app { width: 100%; max-width: 540px; }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  h1 { font-size: 1.6rem; font-weight: 700; }
+  .theme-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: transform 0.15s;
+  }
+  .theme-btn:hover { transform: scale(1.08); }
+  .input-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  #task-input {
+    flex: 1;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 1rem;
+    outline: none;
+    box-shadow: var(--shadow);
+    transition: border 0.2s;
+  }
+  #task-input:focus { border-color: var(--accent); }
+  #add-btn {
+    padding: 0 22px;
+    border: none;
+    border-radius: 12px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s;
+  }
+  #add-btn:hover { filter: brightness(1.1); }
+  #add-btn:active { transform: scale(0.97); }
+  .filters { display: flex; gap: 8px; margin-bottom: 16px; }
+  .filter-btn {
+    padding: 7px 16px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--card);
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  #list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .task {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+    animation: pop 0.2s ease;
+    cursor: grab;
+  }
+  .task.dragging { opacity: 0.45; cursor: grabbing; }
+  @keyframes pop { from { opacity: 0; transform: translateY(6px); } }
+  .drag-handle {
+    color: var(--muted);
+    font-size: 1rem;
+    user-select: none;
+    letter-spacing: -2px;
+  }
+  .checkbox {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border: 2px solid var(--muted);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: transparent;
+    transition: all 0.15s;
+    background: none;
+  }
+  .task.done .checkbox {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .task-text { flex: 1; font-size: 1rem; word-break: break-word; cursor: text; }
+  .task.done .task-text { text-decoration: line-through; color: var(--done); }
+  .task-text input {
+    width: 100%;
+    font-size: 1rem;
+    font-family: inherit;
+    color: var(--text);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--accent);
+    outline: none;
+    padding: 2px 0;
+  }
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--muted);
+    padding: 4px;
+    border-radius: 6px;
+    transition: color 0.15s;
+  }
+  .icon-btn:hover { color: var(--accent); }
+  .icon-btn.delete:hover { color: var(--danger); }
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  #clear-done {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  #clear-done:hover { color: var(--danger); }
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; font-size: 0.95rem; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>&#128221; My To-Do List</h1>
+    <button class="theme-btn" id="theme-toggle" title="Toggle dark mode">&#127769;</button>
+  </header>
+
+  <div class="input-row">
+    <input id="task-input" type="text" placeholder="What needs to be done?" maxlength="200">
+    <button id="add-btn">Add</button>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="active">Active</button>
+    <button class="filter-btn" data-filter="done">Done</button>
+  </div>
+
+  <ul id="list"></ul>
+  <div class="empty" id="empty" hidden>Nothing here yet &#10024;</div>
+
+  <div class="footer">
+    <span id="count"></span>
+    <button id="clear-done">Clear completed</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const STORAGE_KEY = "todo-tasks";
+  const THEME_KEY = "todo-theme";
+
+  let tasks = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  let filter = "all";
+
+  const list = document.getElementById("list");
+  const input = document.getElementById("task-input");
+  const addBtn = document.getElementById("add-btn");
+  const empty = document.getElementById("empty");
+  const count = document.getElementById("count");
+  const clearDone = document.getElementById("clear-done");
+  const themeToggle = document.getElementById("theme-toggle");
+
+  // ---- Theme ----
+  const savedTheme = localStorage.getItem(THEME_KEY) ||
+    (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  setTheme(savedTheme);
+
+  function setTheme(t) {
+    document.documentElement.setAttribute("data-theme", t);
+    themeToggle.textContent = t === "dark" ? "☀️" : "🌙";
+    localStorage.setItem(THEME_KEY, t);
+  }
+  themeToggle.onclick = () =>
+    setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
+
+  // ---- Core ----
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  }
+
+  function addTask() {
+    const text = input.value.trim();
+    if (!text) return;
+    tasks.push({ id: Date.now(), text, done: false });
+    input.value = "";
+    save();
+    render();
+    input.focus();
+  }
+  addBtn.onclick = addTask;
+  input.addEventListener("keydown", e => { if (e.key === "Enter") addTask(); });
+
+  clearDone.onclick = () => {
+    tasks = tasks.filter(t => !t.done);
+    save();
+    render();
+  };
+
+  document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.onclick = () => {
+      filter = btn.dataset.filter;
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.toggle("active", b === btn));
+      render();
+    };
+  });
+
+  // ---- Render ----
+  function render() {
+    list.innerHTML = "";
+    const visible = tasks.filter(t =>
+      filter === "all" ? true : filter === "active" ? !t.done : t.done
+    );
+
+    visible.forEach(task => {
+      const li = document.createElement("li");
+      li.className = "task" + (task.done ? " done" : "");
+      li.draggable = true;
+      li.dataset.id = task.id;
+
+      const handle = document.createElement("span");
+      handle.className = "drag-handle";
+      handle.textContent = "⠿";
+
+      const check = document.createElement("button");
+      check.className = "checkbox";
+      check.textContent = "✓";
+      check.title = "Mark done";
+      check.onclick = () => {
+        task.done = !task.done;
+        save();
+        render();
+      };
+
+      const span = document.createElement("span");
+      span.className = "task-text";
+      span.textContent = task.text;
+      span.title = "Click to edit";
+      span.onclick = () => startEdit(task, span, li);
+
+      const edit = document.createElement("button");
+      edit.className = "icon-btn";
+      edit.textContent = "✏️";
+      edit.title = "Edit";
+      edit.onclick = () => startEdit(task, span, li);
+
+      const del = document.createElement("button");
+      del.className = "icon-btn delete";
+      del.textContent = "🗑️";
+      del.title = "Delete";
+      del.onclick = () => {
+        tasks = tasks.filter(t => t.id !== task.id);
+        save();
+        render();
+      };
+
+      li.append(handle, check, span, edit, del);
+      list.appendChild(li);
+    });
+
+    empty.hidden = visible.length > 0;
+    const remaining = tasks.filter(t => !t.done).length;
+    count.textContent = remaining + (remaining === 1 ? " task left" : " tasks left");
+  }
+
+  function startEdit(task, span, li) {
+    if (span.querySelector("input")) return;
+    li.draggable = false;
+    const field = document.createElement("input");
+    field.value = task.text;
+    field.maxLength = 200;
+    span.textContent = "";
+    span.appendChild(field);
+    field.focus();
+    field.setSelectionRange(field.value.length, field.value.length);
+
+    const finish = (saveIt) => {
+      if (saveIt && field.value.trim()) task.text = field.value.trim();
+      save();
+      render();
+    };
+    field.onblur = () => finish(true);
+    field.onkeydown = e => {
+      if (e.key === "Enter") field.blur();
+      if (e.key === "Escape") finish(false);
+    };
+  }
+
+  // ---- Drag & drop reorder ----
+  let dragId = null;
+
+  list.addEventListener("dragstart", e => {
+    const li = e.target.closest(".task");
+    if (!li) return;
+    dragId = Number(li.dataset.id);
+    li.classList.add("dragging");
+  });
+
+  list.addEventListener("dragend", e => {
+    const li = e.target.closest(".task");
+    if (li) li.classList.remove("dragging");
+    dragId = null;
+    save();
+    render();
+  });
+
+  list.addEventListener("dragover", e => {
+    e.preventDefault();
+    const over = e.target.closest(".task");
+    if (!over || Number(over.dataset.id) === dragId) return;
+
+    const fromIdx = tasks.findIndex(t => t.id === dragId);
+    const toIdx = tasks.findIndex(t => t.id === Number(over.dataset.id));
+    if (fromIdx < 0 || toIdx < 0) return;
+
+    const [moved] = tasks.splice(fromIdx, 1);
+    tasks.splice(toIdx, 0, moved);
+
+    const dragEl = list.querySelector(".dragging");
+    if (dragEl) {
+      const rect = over.getBoundingClientRect();
+      const after = e.clientY > rect.top + rect.height / 2;
+      over.insertAdjacentElement(after ? "afterend" : "beforebegin", dragEl);
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
